@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Sync</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Health Sync">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 16px 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-card {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .status.ready { background: #e8f5e9; color: #2e7d32; }
+        .status.syncing { background: #fff3e0; color: #f57c00; }
+        .status.success { background: #e8f5e9; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
+        
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px;
+            min-width: 140px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+        }
+        
+        .btn.secondary:hover {
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .activity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .activity-item {
+            text-align: center;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .activity-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .activity-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .activity-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .activity-label {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .settings-section {
+            margin-top: 20px;
+        }
+        
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .logs-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .log-entry {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 4px solid #4CAF50;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .log-entry.error {
+            border-left-color: #f44336;
+        }
+        
+        .log-time {
+            color: #666;
+            font-size: 0.8em;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 8px 0;
+            }
+            
+            .activity-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Install prompt */
+        .install-prompt {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+            text-align: center;
+            border: 2px dashed #4CAF50;
+        }
+        
+        .install-prompt.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃‍♂️ Health Sync</h1>
+            <p>Sync your fitness data automatically</p>
+        </div>
+
+        <!-- Install Prompt -->
+        <div id="installPrompt" class="install-prompt hidden">
+            <h3>📱 Install Health Sync</h3>
+            <p>Add this app to your home screen for the best experience!</p>
+            <button class="btn" onclick="installApp()">Install App</button>
+        </div>
+
+        <!-- Status Card -->
+        <div class="card status-card">
+            <h3>Sync Status</h3>
+            <div id="status" class="status ready">Ready to sync</div>
+            <div style="margin-top: 16px;">
+                <button class="btn" id="syncBtn" onclick="syncNow()">
+                    <span id="syncBtnText">🔄 Sync Now</span>
+                </button>
+                <button class="btn secondary" onclick="toggleLogs()">📋 Logs</button>
+            </div>
+            
+            <!-- Sync Logs (hidden by default) -->
+            <div id="logsContainer" class="logs-container hidden">
+                <h4>Recent Sync Logs</h4>
+                <div id="logsList">Loading logs...</div>
+            </div>
+        </div>
+
+        <!-- Activity Data Card -->
+        <div class="card">
+            <h3>Today's Activity</h3>
+            <div class="activity-grid">
+                <div class="activity-item">
+                    <span class="activity-icon">👣</span>
+                    <div class="activity-value" id="steps">--</div>
+                    <div class="activity-label">Steps</div>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-icon">🔥</span>
+                    <div class="activity-value" id="calories">--</div>
+                    <div class="activity-label">Calories</div>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-icon">🌙</span>
+                    <div class="activity-value" id="sleep">--</div>
+                    <div class="activity-label">Sleep (hrs)</div>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-icon">⏱️</span>
+                    <div class="activity-value" id="lastSync">Never</div>
+                    <div class="activity-label">Last Sync</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Card -->
+        <div class="card">
+            <h3>Settings</h3>
+            <div class="settings-section">
+                <div class="settings-row">
+                    <span>Auto Sync (30 min)</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="autoSync" checked onchange="toggleAutoSync()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-row">
+                    <span>Server Status</span>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="testConnection()">Test</button>
+                </div>
+                <div class="settings-row">
+                    <span>API Endpoint</span>
+                    <span id="apiEndpoint" style="font-family: monospace; font-size: 0.8em;">...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; color: white; opacity: 0.8; margin-top: 30px; font-size: 0.9em;">
+            <p>Health Sync v1.0</p>
+            <p>Syncing with Fasting Tracker</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => console.log('SW registered'))
+                .catch(error => console.log('SW registration failed'));
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').classList.remove('hidden');
+        });
+        
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('installPrompt').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+        
+        // Hide install prompt if already installed
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('installPrompt').classList.add('hidden');
+        });
+    </script>
+</body>
+</html> 
